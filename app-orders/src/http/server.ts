@@ -1,15 +1,19 @@
+import '@opentelemetry/auto-instrumentations-node/register'
+import { trace } from '@opentelemetry/api'
+
+import fastifyCors from '@fastify/cors';
 import { fastify } from 'fastify';
+import { setTimeout } from 'node:timers/promises';
 import {
     serializerCompiler,
     validatorCompiler,
     type ZodTypeProvider
 } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { channels } from '../broker/channels/index.ts';
-import fastifyCors from '@fastify/cors';
+import { dispatchOrderCreated } from '../broker/messages/order-created.ts';
 import { db } from '../db/client.ts';
 import { schema } from '../db/schema/index.ts';
-import { dispatchOrderCreated } from '../broker/messages/order-created.ts';
+import { tracer } from '../tracer/tracer.ts';
 
 const app = fastify().withTypeProvider<ZodTypeProvider>();
 
@@ -35,14 +39,6 @@ app.post('/orders', {
 
     const orderId = crypto.randomUUID();
 
-    dispatchOrderCreated({
-        orderId,
-        amount,
-        customer: {
-            id: 'b7def6b4-b840-4b21-ac37-c19e0aa56505'
-        }
-    })
-
     try {
         await db.insert(schema.orders).values({
             id: orderId,
@@ -52,6 +48,21 @@ app.post('/orders', {
     } catch (error) {
         console.error('[Orders] Error inserting order into database:', error);
     }
+
+    const span = tracer.startSpan('eu acho que aqui ta dando merda')
+    span.setAttribute('teste', 'hello world');
+    await setTimeout(2000)
+    span.end()
+
+    trace.getActiveSpan()?.setAttribute('order.id', orderId);
+
+    dispatchOrderCreated({
+        orderId,
+        amount,
+        customer: {
+            id: 'b7def6b4-b840-4b21-ac37-c19e0aa56505'
+        }
+    })
 
     return reply.status(201).send()
 })
