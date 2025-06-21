@@ -16,5 +16,23 @@ services:
       - "4317:4317" # OpenTelemetry gRPC (OPTL gRPC)
       - "4318:4318" # OpenTelemetry HTTP (OPTL HTTP)
 
+  api-gateway:
+    build: 
+      context: ./docker/kong
+    environment:
+      - KONG_DATABASE=off
+      - KONG_ADMIN_LISTEN=0.0.0.0:8001
+      - KONG_ADMIN_GUI_URL=http://localhost:8002
+      - ORDERS_SERVICE_URL=http://host.docker.internal:3333
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8000:8000" # Proxy Route
+      - "8001:8001" # Admin API
+      - "8002:8002" # Admin UI
+      - "8004:8004" # Proxy Route (HTTPS)
+      - "8444:8444" # Admin API (HTTPS)
+
+
 volumes:
   rabbitmq_data:

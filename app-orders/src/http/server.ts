@@ -49,11 +49,6 @@ app.post('/orders', {
         console.error('[Orders] Error inserting order into database:', error);
     }
 
-    const span = tracer.startSpan('eu acho que aqui ta dando merda')
-    span.setAttribute('teste', 'hello world');
-    await setTimeout(2000)
-    span.end()
-
     trace.getActiveSpan()?.setAttribute('order.id', orderId);
 
     dispatchOrderCreated({
